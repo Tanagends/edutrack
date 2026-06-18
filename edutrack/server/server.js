@@ -8,6 +8,7 @@ const { initSocket } = require('./sockets/notifications');
 
 // Route imports
 const authRoutes = require('./routes/auth.routes');
+const userRoutes = require('./routes/user.routes');
 const studentRoutes = require('./routes/student.routes');
 const courseRoutes = require('./routes/course.routes');
 const attendanceRoutes = require('./routes/attendance.routes');
@@ -34,6 +35,7 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Dat
 
 // Mount routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/attendance', attendanceRoutes);

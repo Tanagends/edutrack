@@ -6,7 +6,7 @@ const emptyForm = { code: '', name: '', credits: 3, semester: 1, department: '',
 
 const Courses = () => {
   const [courses, setCourses] = useState([]);
-  const [faculty, setFaculty] = useState([]);
+  const [facultyList, setFacultyList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -14,12 +14,14 @@ const Courses = () => {
 
   const fetchAll = async () => {
     try {
-      const [cRes] = await Promise.all([api.get('/courses')]);
+      const [cRes, fRes] = await Promise.all([
+        api.get('/courses'),
+        api.get('/users?role=faculty'),
+      ]);
       setCourses(cRes.data.data);
-      // Fetch faculty list from students endpoint workaround — get users with role faculty
-      // (In a real app you'd have a /api/users?role=faculty endpoint)
+      setFacultyList(fRes.data.data);
     } catch (err) {
-      toast.error('Failed to load courses');
+      toast.error('Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -34,6 +36,7 @@ const Courses = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.faculty) return toast.error('Please select a faculty member');
     setSaving(true);
     try {
       await api.post('/courses', form);
@@ -75,6 +78,13 @@ const Courses = () => {
       {showForm && (
         <div className="card border border-orange-100">
           <h3 className="font-semibold text-gray-800 mb-4">New Course</h3>
+
+          {facultyList.length === 0 && (
+            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
+              ⚠️ No faculty found. <a href="/admin/faculty" className="underline font-medium">Add faculty first</a> before creating courses.
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Course Code</label>
@@ -89,8 +99,13 @@ const Courses = () => {
               <input name="department" value={form.department} onChange={handleChange} className="input" placeholder="Computer Science" required />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Faculty User ID</label>
-              <input name="faculty" value={form.faculty} onChange={handleChange} className="input" placeholder="Paste faculty _id from DB" required />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Assign Faculty</label>
+              <select name="faculty" value={form.faculty} onChange={handleChange} className="input" required>
+                <option value="">— Select faculty —</option>
+                {facultyList.map((f) => (
+                  <option key={f._id} value={f._id}>{f.name} ({f.email})</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Credits</label>
@@ -106,7 +121,7 @@ const Courses = () => {
             </div>
             <div className="col-span-2 flex justify-end gap-3">
               <button type="button" onClick={() => setShowForm(false)} className="btn-secondary text-sm">Cancel</button>
-              <button type="submit" disabled={saving} className="btn-primary text-sm">
+              <button type="submit" disabled={saving || facultyList.length === 0} className="btn-primary text-sm">
                 {saving ? 'Creating...' : 'Create Course'}
               </button>
             </div>
@@ -138,7 +153,7 @@ const Courses = () => {
               ) : (
                 courses.map((c) => (
                   <tr key={c._id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                    <td className="px-5 py-3 font-mono text-xs text-gray-600">{c.code}</td>
+                    <td className="px-5 py-3 font-mono text-xs text-gray-600 font-medium">{c.code}</td>
                     <td className="px-5 py-3 font-medium text-gray-800">{c.name}</td>
                     <td className="px-5 py-3 text-gray-600">{c.department}</td>
                     <td className="px-5 py-3 text-gray-600">{c.faculty?.name || '—'}</td>

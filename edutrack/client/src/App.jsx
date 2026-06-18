@@ -16,6 +16,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 // Admin pages
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminStudents  from './pages/admin/Students';
+import AdminFaculty   from './pages/admin/Faculty';
 import AdminCourses   from './pages/admin/Courses';
 import AdminAnalytics from './pages/admin/Analytics';
 import AdminRisk      from './pages/admin/Risk';
@@ -50,6 +51,7 @@ const App = () => {
         <Route element={<AdminLayout />}>
           <Route path="/admin"            element={<AdminDashboard />} />
           <Route path="/admin/students"   element={<AdminStudents />} />
+          <Route path="/admin/faculty"    element={<AdminFaculty />} />
           <Route path="/admin/courses"    element={<AdminCourses />} />
           <Route path="/admin/analytics"  element={<AdminAnalytics />} />
           <Route path="/admin/risk"       element={<AdminRisk />} />

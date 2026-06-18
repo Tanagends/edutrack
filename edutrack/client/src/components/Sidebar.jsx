@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 const adminLinks = [
   { to: '/admin', label: 'Dashboard', icon: '🏠' },
   { to: '/admin/students', label: 'Students', icon: '🎓' },
+  { to: '/admin/faculty', label: 'Faculty', icon: '👨‍🏫' },
   { to: '/admin/courses', label: 'Courses', icon: '📚' },
   { to: '/admin/analytics', label: 'Analytics', icon: '📊' },
   { to: '/admin/risk', label: 'Risk Alerts', icon: '⚠️' },

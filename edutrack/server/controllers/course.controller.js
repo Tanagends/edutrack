@@ -1,15 +1,33 @@
 const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
+const Student = require('../models/Student');
 
-// @desc    Get all courses
+// @desc    Get courses
+//          Admin → all courses
+//          Faculty → their assigned courses
+//          Student → only enrolled courses
 // @route   GET /api/courses
 // @access  All authenticated
 const getCourses = async (req, res, next) => {
   try {
-    const filter = {};
-    if (req.user.role === 'faculty') filter.faculty = req.user._id;
+    let courses;
 
-    const courses = await Course.find(filter).populate('faculty', 'name email');
+    if (req.user.role === 'admin') {
+      courses = await Course.find().populate('faculty', 'name email');
+    } else if (req.user.role === 'faculty') {
+      courses = await Course.find({ faculty: req.user._id }).populate('faculty', 'name email');
+    } else {
+      // Student — find via enrollments
+      const student = await Student.findOne({ user: req.user._id });
+      if (!student) return res.status(200).json({ success: true, count: 0, data: [] });
+
+      const enrollments = await Enrollment.find({ student: student._id, isActive: true }).populate({
+        path: 'course',
+        populate: { path: 'faculty', select: 'name email' },
+      });
+      courses = enrollments.map((e) => e.course).filter(Boolean);
+    }
+
     res.status(200).json({ success: true, count: courses.length, data: courses });
   } catch (err) {
     next(err);
