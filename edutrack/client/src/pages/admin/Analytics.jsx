@@ -68,28 +68,60 @@ const Analytics = () => {
         <p className="text-gray-500 text-sm mt-1">Attendance rates and grade distributions across all courses.</p>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {/* Attendance bar chart */}
-        <div className="card">
-          <h2 className="font-semibold text-gray-800 mb-4">Attendance by Course</h2>
-          {attendance.length === 0 ? (
-            <p className="text-gray-400 text-sm">No attendance data yet.</p>
-          ) : (
-            <Bar
-              data={attendanceChart}
-              options={{
-                responsive: true,
-                scales: {
-                  y: { min: 0, max: 100, ticks: { callback: (v) => `${v}%` } },
-                },
-                plugins: { legend: { display: false } },
-              }}
-            />
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 xl:items-start">
+        {/* LEFT COLUMN — attendance chart + table grouped together so they
+            always stack adjacent to each other, even below the xl breakpoint */}
+        <div className="space-y-6">
+          <div className="card">
+            <h2 className="font-semibold text-gray-800 mb-4">Attendance by Course</h2>
+            {attendance.length === 0 ? (
+              <p className="text-gray-400 text-sm">No attendance data yet.</p>
+            ) : (
+              <Bar
+                data={attendanceChart}
+                options={{
+                  responsive: true,
+                  scales: {
+                    y: { min: 0, max: 100, ticks: { callback: (v) => `${v}%` } },
+                  },
+                  plugins: { legend: { display: false } },
+                }}
+              />
+            )}
+            <p className="text-xs text-gray-400 mt-3">🟢 ≥ 75%  🔴 &lt; 75%</p>
+          </div>
+
+          {attendance.length > 0 && (
+            <div className="card p-0 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50">
+                    <th className="text-left px-5 py-3 font-medium text-gray-600">Course</th>
+                    <th className="text-left px-5 py-3 font-medium text-gray-600">Present</th>
+                    <th className="text-left px-5 py-3 font-medium text-gray-600">Total Records</th>
+                    <th className="text-left px-5 py-3 font-medium text-gray-600">Rate</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {attendance.map((c) => (
+                    <tr key={c._id} className="border-b border-gray-50 hover:bg-gray-50">
+                      <td className="px-5 py-3 font-medium text-gray-800">{c.courseCode} — {c.courseName}</td>
+                      <td className="px-5 py-3 text-gray-600">{c.presentCount}</td>
+                      <td className="px-5 py-3 text-gray-600">{c.totalRecords}</td>
+                      <td className="px-5 py-3">
+                        <span className={c.percentage >= 75 ? 'badge-ok' : 'badge-risk'}>
+                          {c.percentage}%
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
-          <p className="text-xs text-gray-400 mt-3">🟢 ≥ 75%  🔴 &lt; 75%</p>
         </div>
 
-        {/* Grade doughnut */}
+        {/* RIGHT COLUMN — grade distribution */}
         <div className="card">
           <h2 className="font-semibold text-gray-800 mb-4">Overall Grade Distribution</h2>
           {gradeCounts.every((c) => c === 0) ? (
@@ -103,36 +135,6 @@ const Analytics = () => {
           )}
         </div>
       </div>
-
-      {/* Attendance table */}
-      {attendance.length > 0 && (
-        <div className="card p-0 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50">
-                <th className="text-left px-5 py-3 font-medium text-gray-600">Course</th>
-                <th className="text-left px-5 py-3 font-medium text-gray-600">Present</th>
-                <th className="text-left px-5 py-3 font-medium text-gray-600">Total Records</th>
-                <th className="text-left px-5 py-3 font-medium text-gray-600">Rate</th>
-              </tr>
-            </thead>
-            <tbody>
-              {attendance.map((c) => (
-                <tr key={c._id} className="border-b border-gray-50 hover:bg-gray-50">
-                  <td className="px-5 py-3 font-medium text-gray-800">{c.courseCode} — {c.courseName}</td>
-                  <td className="px-5 py-3 text-gray-600">{c.presentCount}</td>
-                  <td className="px-5 py-3 text-gray-600">{c.totalRecords}</td>
-                  <td className="px-5 py-3">
-                    <span className={c.percentage >= 75 ? 'badge-ok' : 'badge-risk'}>
-                      {c.percentage}%
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
     </div>
   );
 };

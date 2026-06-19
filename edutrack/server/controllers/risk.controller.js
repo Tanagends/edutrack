@@ -1,26 +1,33 @@
+const Course = require('../models/Course');
 const AttendanceRecord = require('../models/AttendanceRecord');
 const AttendanceSession = require('../models/AttendanceSession');
 const Grade = require('../models/Grade');
 const Enrollment = require('../models/Enrollment');
 const { sendRiskAlert } = require('../utils/mailer');
 
-const ATTENDANCE_THRESHOLD = 75;
-const LOW_GRADE_THRESHOLD  = 50;
+const ATTENDANCE_THRESHOLD = 75; // %
+const RISK_LETTER_GRADES = ['F', 'C']; // letterGrade values considered "at risk"
 
-// @desc    Get at-risk students
+// @desc    Get at-risk students.
+//          Returns one row per (student, course, reason) — a student can
+//          appear multiple times if they're at risk for more than one
+//          reason in the same course (e.g. low attendance AND low grade).
 // @route   GET /api/risk
 // @access  Admin, Faculty
 const getAtRiskStudents = async (req, res, next) => {
   try {
     const atRiskList = [];
 
+    // Faculty only sees their own courses
+    let courseIdFilter = null;
+    if (req.user.role === 'faculty') {
+      const courses = await Course.find({ faculty: req.user._id }).select('_id');
+      courseIdFilter = courses.map((c) => c._id);
+    }
+
     // ── 1. Attendance risk ───────────────────────────────────────────────
     const enrollmentFilter = { isActive: true };
-    // Faculty only sees their own courses
-    if (req.user.role === 'faculty') {
-      const courses = await require('../models/Course').find({ faculty: req.user._id }).select('_id');
-      enrollmentFilter.course = { $in: courses.map((c) => c._id) };
-    }
+    if (courseIdFilter) enrollmentFilter.course = { $in: courseIdFilter };
 
     const enrollments = await Enrollment.find(enrollmentFilter)
       .populate({ path: 'student', populate: { path: 'user', select: 'name email' } })
@@ -52,36 +59,26 @@ const getAtRiskStudents = async (req, res, next) => {
       }
     }
 
-    // ── 2. Grade risk ────────────────────────────────────────────────────
-    const gradeFilter = {};
-    if (req.user.role === 'faculty') {
-      const courses = await require('../models/Course').find({ faculty: req.user._id }).select('_id');
-      gradeFilter.course = { $in: courses.map((c) => c._id) };
-    }
+    // ── 2. Grade risk — independent of attendance risk, always shown ─────
+    const gradeFilter = { letterGrade: { $in: RISK_LETTER_GRADES } };
+    if (courseIdFilter) gradeFilter.course = { $in: courseIdFilter };
 
-    const grades = await Grade.find({ ...gradeFilter, letterGrade: { $in: ['F', 'C'] } })
+    const grades = await Grade.find(gradeFilter)
       .populate({ path: 'student', populate: { path: 'user', select: 'name email' } })
       .populate('course', 'name code');
 
     for (const g of grades) {
       if (!g.student || !g.course || g.weightedScore === 0) continue;
 
-      // Avoid duplicating if already flagged for attendance in same course
-      const alreadyFlagged = atRiskList.some(
-        (r) =>
-          r.student._id?.toString() === g.student._id?.toString() &&
-          r.course._id?.toString() === g.course._id?.toString()
-      );
-
-      if (!alreadyFlagged) {
-        atRiskList.push({
-          student: g.student,
-          course: g.course,
-          currentScore: g.weightedScore,
-          letterGrade: g.letterGrade,
-          reason: 'low_grade',
-        });
-      }
+      // No dedup against attendance risk — a student at risk for two
+      // different reasons in the same course should show two rows.
+      atRiskList.push({
+        student: g.student,
+        course: g.course,
+        currentScore: g.weightedScore,
+        letterGrade: g.letterGrade,
+        reason: 'low_grade',
+      });
     }
 
     res.status(200).json({ success: true, count: atRiskList.length, data: atRiskList });
@@ -101,9 +98,9 @@ const triggerRiskAlerts = async (req, res, next) => {
     for (const entry of atRiskStudents) {
       try {
         await sendRiskAlert(entry);
-        results.push({ student: entry.student?._id || entry.student, status: 'sent' });
+        results.push({ student: entry.student?._id || entry.student, reason: entry.reason, status: 'sent' });
       } catch (e) {
-        results.push({ student: entry.student?._id || entry.student, status: 'failed', error: e.message });
+        results.push({ student: entry.student?._id || entry.student, reason: entry.reason, status: 'failed', error: e.message });
       }
     }
 

@@ -25,12 +25,14 @@ import AdminRisk      from './pages/admin/Risk';
 import FacultyDashboard  from './pages/faculty/Dashboard';
 import FacultyAttendance from './pages/faculty/Attendance';
 import FacultyGrades     from './pages/faculty/Grades';
+import FacultyAnalytics  from './pages/faculty/Analytics';
 import FacultyRisk       from './pages/faculty/Risk';
 
 // Student pages
 import StudentDashboard  from './pages/student/Dashboard';
 import StudentAttendance from './pages/student/Attendance';
 import StudentGrades     from './pages/student/Grades';
+import StudentAnalytics  from './pages/student/Analytics';
 
 const App = () => {
   const { user } = useAuth();
@@ -64,6 +66,7 @@ const App = () => {
           <Route path="/faculty"            element={<FacultyDashboard />} />
           <Route path="/faculty/attendance" element={<FacultyAttendance />} />
           <Route path="/faculty/grades"     element={<FacultyGrades />} />
+          <Route path="/faculty/analytics"  element={<FacultyAnalytics />} />
           <Route path="/faculty/risk"       element={<FacultyRisk />} />
         </Route>
       </Route>
@@ -74,6 +77,7 @@ const App = () => {
           <Route path="/student"            element={<StudentDashboard />} />
           <Route path="/student/attendance" element={<StudentAttendance />} />
           <Route path="/student/grades"     element={<StudentGrades />} />
+          <Route path="/student/analytics"  element={<StudentAnalytics />} />
         </Route>
       </Route>
 

@@ -159,6 +159,7 @@ const manualMark = async (req, res, next) => {
       qrToken: uuidv4(),          // dummy token, session is already closed
       expiresAt: new Date(),      // expired immediately
       isActive: false,
+      type: 'manual',
     });
 
     // Bulk insert records

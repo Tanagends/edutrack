@@ -15,6 +15,7 @@ const facultyLinks = [
   { to: '/faculty', label: 'Dashboard', icon: '🏠' },
   { to: '/faculty/attendance', label: 'Attendance', icon: '📋' },
   { to: '/faculty/grades', label: 'Grades', icon: '✏️' },
+  { to: '/faculty/analytics', label: 'Analytics', icon: '📊' },
   { to: '/faculty/risk', label: 'Risk Alerts', icon: '⚠️' },
 ];
 
@@ -22,6 +23,7 @@ const studentLinks = [
   { to: '/student', label: 'Dashboard', icon: '🏠' },
   { to: '/student/attendance', label: 'Attendance', icon: '📋' },
   { to: '/student/grades', label: 'My Grades', icon: '✏️' },
+  { to: '/student/analytics', label: 'Analytics', icon: '📊' },
 ];
 
 const roleLinks = { admin: adminLinks, faculty: facultyLinks, student: studentLinks };

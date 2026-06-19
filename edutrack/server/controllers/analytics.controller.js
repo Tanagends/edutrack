@@ -27,11 +27,20 @@ const getOverview = async (req, res, next) => {
 };
 
 // @desc    Attendance breakdown per course (for charts)
+//          Admin sees all courses, Faculty sees only their own
 // @route   GET /api/analytics/attendance
 // @access  Admin, Faculty
 const getAttendanceAnalytics = async (req, res, next) => {
   try {
-    const stats = await AttendanceRecord.aggregate([
+    const pipeline = [];
+
+    if (req.user.role === 'faculty') {
+      const courses = await Course.find({ faculty: req.user._id }).select('_id');
+      const courseIds = courses.map((c) => c._id);
+      pipeline.push({ $match: { course: { $in: courseIds } } });
+    }
+
+    pipeline.push(
       {
         $group: {
           _id: '$course',
@@ -39,9 +48,7 @@ const getAttendanceAnalytics = async (req, res, next) => {
           totalRecords: { $sum: 1 },
         },
       },
-      {
-        $lookup: { from: 'courses', localField: '_id', foreignField: '_id', as: 'course' },
-      },
+      { $lookup: { from: 'courses', localField: '_id', foreignField: '_id', as: 'course' } },
       { $unwind: '$course' },
       {
         $project: {
@@ -53,9 +60,10 @@ const getAttendanceAnalytics = async (req, res, next) => {
             $round: [{ $multiply: [{ $divide: ['$presentCount', '$totalRecords'] }, 100] }, 1],
           },
         },
-      },
-    ]);
+      }
+    );
 
+    const stats = await AttendanceRecord.aggregate(pipeline);
     res.status(200).json({ success: true, data: stats });
   } catch (err) {
     next(err);
@@ -63,20 +71,27 @@ const getAttendanceAnalytics = async (req, res, next) => {
 };
 
 // @desc    Grade distribution per course
+//          Admin sees all courses, Faculty sees only their own
 // @route   GET /api/analytics/grades
 // @access  Admin, Faculty
 const getGradeAnalytics = async (req, res, next) => {
   try {
-    const dist = await Grade.aggregate([
+    const pipeline = [];
+
+    if (req.user.role === 'faculty') {
+      const courses = await Course.find({ faculty: req.user._id }).select('_id');
+      const courseIds = courses.map((c) => c._id);
+      pipeline.push({ $match: { course: { $in: courseIds } } });
+    }
+
+    pipeline.push(
       {
         $group: {
           _id: { course: '$course', letterGrade: '$letterGrade' },
           count: { $sum: 1 },
         },
       },
-      {
-        $lookup: { from: 'courses', localField: '_id.course', foreignField: '_id', as: 'course' },
-      },
+      { $lookup: { from: 'courses', localField: '_id.course', foreignField: '_id', as: 'course' } },
       { $unwind: '$course' },
       {
         $group: {
@@ -85,9 +100,10 @@ const getGradeAnalytics = async (req, res, next) => {
           courseCode: { $first: '$course.code' },
           distribution: { $push: { grade: '$_id.letterGrade', count: '$count' } },
         },
-      },
-    ]);
+      }
+    );
 
+    const dist = await Grade.aggregate(pipeline);
     res.status(200).json({ success: true, data: dist });
   } catch (err) {
     next(err);

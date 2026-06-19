@@ -301,7 +301,7 @@ const FacultyAttendance = () => {
                     {new Date(s.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </td>
                   <td className="px-5 py-3 text-gray-500 text-xs">
-                    {s.isActive ? '📱 QR' : new Date(s.expiresAt) <= new Date(s.createdAt) ? '✏️ Manual' : '📱 QR (closed)'}
+                    {s.type === 'manual' ? '✏️ Manual' : s.isActive ? '📱 QR' : '📱 QR (closed)'}
                   </td>
                   <td className="px-5 py-3">
                     <span className={s.isActive ? 'badge-ok' : 'text-gray-400 text-xs'}>

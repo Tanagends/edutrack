@@ -31,6 +31,12 @@ const AttendanceSessionSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    // How this session was taken — avoids guessing from timestamps in the UI
+    type: {
+      type: String,
+      enum: ['qr', 'manual'],
+      default: 'qr',
+    },
     // Count for quick stats
     totalPresent: {
       type: Number,
