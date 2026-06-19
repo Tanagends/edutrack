@@ -77,10 +77,10 @@ const AdminDashboard = () => {
                     {entry.course?.code} — {entry.course?.name}
                   </p>
                 </div>
-                <span className={entry.reason === 'low_attendance' ? 'badge-risk' : 'badge-risk'}>
+                <span className="badge-risk">
                   {entry.reason === 'low_attendance'
                     ? `${entry.attendancePercent}% attendance`
-                    : `Grade drop: ${entry.gradeDrop}pts`}
+                    : `Grade: ${entry.letterGrade}`}
                 </span>
               </div>
             ))}

@@ -79,7 +79,7 @@ const FacultyDashboard = () => {
               <div key={i} className="flex items-center justify-between text-sm">
                 <span className="text-gray-700">{entry.student?.user?.name}</span>
                 <span className="badge-risk">
-                  {entry.reason === 'low_attendance' ? `${entry.attendancePercent}% attendance` : 'Grade drop'}
+                  {entry.reason === 'low_attendance' ? `${entry.attendancePercent}% attendance` : `Grade: ${entry.letterGrade}`}
                 </span>
               </div>
             ))}

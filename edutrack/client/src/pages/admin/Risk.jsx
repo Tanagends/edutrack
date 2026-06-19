@@ -34,7 +34,7 @@ const Risk = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">⚠️ Risk Alerts</h1>
           <p className="text-gray-500 text-sm mt-1">
-            Students below 75% attendance or with significant grade drops.
+            Students below 75% attendance or with a C/F grade in any course.
           </p>
         </div>
         {list.length > 0 && (
@@ -77,16 +77,22 @@ const Risk = () => {
                   </td>
                   <td className="px-5 py-3">
                     {entry.reason === 'low_attendance' ? (
-                      <span>Attendance: <strong className="text-red-600">{entry.attendancePercent}%</strong></span>
+                      <span>
+                        Attendance: <strong className="text-red-600">{entry.attendancePercent}%</strong>
+                        <span className="text-gray-400 text-xs"> ({entry.attended}/{entry.totalSessions})</span>
+                      </span>
                     ) : (
-                      <span>Grade drop: <strong className="text-red-600">{entry.gradeDrop} pts</strong> · Score: {entry.currentScore}</span>
+                      <span>
+                        Grade: <strong className="text-red-600">{entry.letterGrade}</strong>
+                        <span className="text-gray-400 text-xs"> ({entry.currentScore}/100)</span>
+                      </span>
                     )}
                   </td>
                   <td className="px-5 py-3">
                     <span className="badge-risk">
                       {entry.reason === 'low_attendance'
                         ? entry.attendancePercent < 50 ? 'Critical' : 'Warning'
-                        : 'Warning'}
+                        : entry.letterGrade === 'F' ? 'Critical' : 'Warning'}
                     </span>
                   </td>
                 </tr>

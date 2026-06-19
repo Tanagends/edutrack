@@ -93,4 +93,19 @@ const enrollStudent = async (req, res, next) => {
   }
 };
 
-module.exports = { getCourses, createCourse, updateCourse, deleteCourse, enrollStudent };
+// @desc    Get all students enrolled in a course
+// @route   GET /api/courses/:id/students
+// @access  Faculty, Admin
+const getEnrolledStudents = async (req, res, next) => {
+  try {
+    const enrollments = await Enrollment.find({ course: req.params.id, isActive: true })
+      .populate({ path: 'student', populate: { path: 'user', select: 'name email' } });
+
+    const students = enrollments.map((e) => e.student).filter(Boolean);
+    res.status(200).json({ success: true, count: students.length, data: students });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { getCourses, createCourse, updateCourse, deleteCourse, enrollStudent, getEnrolledStudents };

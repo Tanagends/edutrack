@@ -137,4 +137,52 @@ const getSessionsByCourse = async (req, res, next) => {
   }
 };
 
-module.exports = { createSession, markAttendance, getAttendanceSummary, getSessionsByCourse };
+// @desc    Faculty manually marks attendance for a list of students
+// @route   POST /api/attendance/manual
+// @access  Faculty
+const manualMark = async (req, res, next) => {
+  try {
+    const { courseId, date, attendances } = req.body;
+    // attendances: [{ studentId, status }]  status = 'present' | 'absent'
+
+    if (!attendances || attendances.length === 0) {
+      return res.status(400).json({ success: false, message: 'No attendance records provided' });
+    }
+
+    const { v4: uuidv4 } = require('uuid');
+
+    // Create a closed session (isActive false — no QR needed)
+    const session = await AttendanceSession.create({
+      course: courseId,
+      faculty: req.user._id,
+      date: date ? new Date(date) : new Date(),
+      qrToken: uuidv4(),          // dummy token, session is already closed
+      expiresAt: new Date(),      // expired immediately
+      isActive: false,
+    });
+
+    // Bulk insert records
+    const records = attendances.map(({ studentId, status }) => ({
+      session: session._id,
+      student: studentId,
+      course: courseId,
+      status: status || 'present',
+      markedAt: new Date(),
+    }));
+
+    await AttendanceRecord.insertMany(records, { ordered: false });
+
+    const presentCount = attendances.filter((a) => a.status === 'present').length;
+    await AttendanceSession.findByIdAndUpdate(session._id, { totalPresent: presentCount });
+
+    res.status(201).json({
+      success: true,
+      message: `Attendance recorded for ${attendances.length} students (${presentCount} present)`,
+      sessionId: session._id,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { createSession, markAttendance, getAttendanceSummary, getSessionsByCourse, manualMark };

@@ -38,13 +38,13 @@ const sendRiskAlert = async (entry) => {
       <hr/>
       <small>Sent by EduTrack — Aditya University</small>
     `;
-  } else if (entry.reason === 'grade_drop') {
-    subject = `[EduTrack Alert] Significant Grade Drop — ${studentName} in ${courseCode}`;
+  } else if (entry.reason === 'low_grade') {
+    subject = `[EduTrack Alert] Low Grade — ${studentName} in ${courseCode}`;
     body = `
-      <h2 style="color:#e85d04">Academic Risk Alert — Grade Drop</h2>
+      <h2 style="color:#e85d04">Academic Risk Alert — Low Grade</h2>
       <p><strong>Student:</strong> ${studentName} (${studentEmail})</p>
       <p><strong>Course:</strong> ${courseName} (${courseCode})</p>
-      <p><strong>Grade Drop:</strong> ${entry.gradeDrop} points | Current Score: ${entry.currentScore}</p>
+      <p><strong>Current Grade:</strong> ${entry.letterGrade} (${entry.currentScore}/100)</p>
       <p>Please review recent assessment results and follow up with the student.</p>
       <hr/>
       <small>Sent by EduTrack — Aditya University</small>

@@ -7,9 +7,10 @@ const emptyAssessment = { name: '', score: '', maxScore: 100, weightPercent: '' 
 const FacultyGrades = () => {
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState('');
-  const [students, setStudents] = useState([]);
+  const [enrolledStudents, setEnrolledStudents] = useState([]);
   const [grades, setGrades] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [loadingGrades, setLoadingGrades] = useState(false);
   const [form, setForm] = useState({ studentId: '', academicYear: '2024-25', semester: 1, assessment: { ...emptyAssessment } });
   const [saving, setSaving] = useState(false);
 
@@ -18,7 +19,7 @@ const FacultyGrades = () => {
   }, []);
 
   const loadGrades = async (courseId) => {
-    setLoading(true);
+    setLoadingGrades(true);
     try {
       const { data } = await api.get(`/grades/course/${courseId}/all`);
       setGrades(data.data);
@@ -26,13 +27,34 @@ const FacultyGrades = () => {
       if (err.response?.status !== 404) toast.error('Failed to load grades');
       setGrades([]);
     } finally {
-      setLoading(false);
+      setLoadingGrades(false);
+    }
+  };
+
+  const loadEnrolledStudents = async (courseId) => {
+    setLoadingStudents(true);
+    try {
+      const { data } = await api.get(`/courses/${courseId}/students`);
+      setEnrolledStudents(data.data);
+    } catch (err) {
+      toast.error('Failed to load enrolled students');
+      setEnrolledStudents([]);
+    } finally {
+      setLoadingStudents(false);
     }
   };
 
   const handleCourseChange = (e) => {
-    setSelectedCourse(e.target.value);
-    if (e.target.value) loadGrades(e.target.value);
+    const courseId = e.target.value;
+    setSelectedCourse(courseId);
+    setForm((f) => ({ ...f, studentId: '' }));
+    if (courseId) {
+      loadGrades(courseId);
+      loadEnrolledStudents(courseId);
+    } else {
+      setGrades([]);
+      setEnrolledStudents([]);
+    }
   };
 
   const handleFormChange = (e) => {
@@ -46,6 +68,7 @@ const FacultyGrades = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.studentId) return toast.error('Select a student');
     setSaving(true);
     try {
       await api.post('/grades/assess', {
@@ -90,44 +113,65 @@ const FacultyGrades = () => {
       {selectedCourse && (
         <div className="card border border-orange-100">
           <h3 className="font-semibold text-gray-800 mb-4">Add / Update Assessment</h3>
-          <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Student ID</label>
-              <input name="studentId" value={form.studentId} onChange={handleFormChange} className="input" placeholder="Student _id from DB" required />
+
+          {loadingStudents ? (
+            <div className="flex items-center gap-2 text-gray-400 text-sm">
+              <div className="w-4 h-4 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
+              Loading enrolled students...
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Assessment Name</label>
-              <input name="name" value={form.assessment.name} onChange={handleFormChange} className="input" placeholder="Mid-1 / Assignment-2 / Final" required />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Score</label>
-              <input type="number" name="score" value={form.assessment.score} onChange={handleFormChange} className="input" min="0" required />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Max Score</label>
-              <input type="number" name="maxScore" value={form.assessment.maxScore} onChange={handleFormChange} className="input" min="1" required />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Weight %</label>
-              <input type="number" name="weightPercent" value={form.assessment.weightPercent} onChange={handleFormChange} className="input" min="1" max="100" required />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Academic Year</label>
-              <input name="academicYear" value={form.academicYear} onChange={handleFormChange} className="input" placeholder="2024-25" required />
-            </div>
-            <div className="col-span-2 flex justify-end">
-              <button type="submit" disabled={saving} className="btn-primary text-sm">
-                {saving ? 'Saving...' : 'Save Grade'}
-              </button>
-            </div>
-          </form>
+          ) : enrolledStudents.length === 0 ? (
+            <p className="text-sm text-gray-400">No students enrolled in this course yet. Ask admin to enroll students first.</p>
+          ) : (
+            <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Student</label>
+                <select name="studentId" value={form.studentId} onChange={handleFormChange} className="input" required>
+                  <option value="">— Select a student —</option>
+                  {enrolledStudents.map((s) => (
+                    <option key={s._id} value={s._id}>{s.user?.name} ({s.rollNumber})</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Assessment Name</label>
+                <input name="name" value={form.assessment.name} onChange={handleFormChange} className="input" placeholder="Mid-1 / Assignment-2 / Final" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Academic Year</label>
+                <input name="academicYear" value={form.academicYear} onChange={handleFormChange} className="input" placeholder="2024-25" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Score</label>
+                <input type="number" name="score" value={form.assessment.score} onChange={handleFormChange} className="input" min="0" step="0.5" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Max Score</label>
+                <input type="number" name="maxScore" value={form.assessment.maxScore} onChange={handleFormChange} className="input" min="1" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Weight %</label>
+                <input type="number" name="weightPercent" value={form.assessment.weightPercent} onChange={handleFormChange} className="input" min="1" max="100" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Semester</label>
+                <select name="semester" value={form.semester} onChange={handleFormChange} className="input">
+                  {[1,2,3,4,5,6,7,8].map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div className="col-span-2 flex justify-end">
+                <button type="submit" disabled={saving} className="btn-primary text-sm">
+                  {saving ? 'Saving...' : 'Save Grade'}
+                </button>
+              </div>
+            </form>
+          )}
         </div>
       )}
 
       {/* Grades table */}
       {selectedCourse && (
         <div className="card p-0 overflow-hidden">
-          {loading ? (
+          {loadingGrades ? (
             <div className="flex items-center justify-center h-32">
               <div className="w-7 h-7 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
             </div>
